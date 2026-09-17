@@ -63,11 +63,11 @@ GROQ_API_KEY=your_groq_api_key_here
 
 
 **How to Run**
-Start the FastAPI application using uvicorn:
 
-Bash
-uvicorn main:app --reload
-Open your browser and navigate to http://127.0.0.1:8000.
+Start the application directly using Python:
+
+```bash
+python main.py
 
 **How to Use**
 Open the application in your browser.
