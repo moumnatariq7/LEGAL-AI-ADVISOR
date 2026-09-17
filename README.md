@@ -37,37 +37,39 @@ LEGAL-AI-ADVISOR/
 └── .env                   # Environment variables (API Key)
 
 
-Installation & Setup:
+**Installation & Setup:**
 1. Clone the Repository
-Bash
-git clone [https://github.com/YOUR_USERNAME/YOUR_REPOSITORY_NAME.git](https://github.com/YOUR_USERNAME/YOUR_REPOSITORY_NAME.git)
+git clone https://github.com/moumnatariq7/LEGAL-AI-ADVISOR.git
+
+Move into the project directory:
+
 cd LEGAL-AI-ADVISOR
 
-2. Create and Activate Virtual Environment
+2.**Create and Activate Virtual Environment**
 Bash:
 python -m venv .venv
 # On Windows:
 .venv\Scripts\activate
 
-3. Install Dependencies:
+3. **Install Dependencies**:
 Bash
 pip install -r requirements.txt
 
-4. Configure Environment Variables
+4. **Configure Environment Variables**
 Create a .env file in the root directory:
 
 Code snippet
 GROQ_API_KEY=your_groq_api_key_here
 
 
-How to Run
+**How to Run**
 Start the FastAPI application using uvicorn:
 
 Bash
 uvicorn main:app --reload
 Open your browser and navigate to http://127.0.0.1:8000.
 
-How to Use
+**How to Use**
 Open the application in your browser.
 
 Upload a supported contract document (PDF, DOCX, or Image).
@@ -76,5 +78,5 @@ Type a legal query or ask for a contract risk analysis in Roman Urdu or English.
 
 Review the detected risks, explanations, and suggested safe alternatives.
 
-Project Outcome:
+**Project Outcome:**
 The outcome is a fully functional AI Legal Advisor that simplifies contract review, detects risky terms using Pakistani legal context, and provides persistent, multi-format document analysis.
