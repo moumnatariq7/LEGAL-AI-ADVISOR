@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legal AI Advisor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Markdown Parser for Professional Formatting -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        :root {
+            --bg-main: #0f172a;
+            --bg-sidebar: #1e293b;
+            --bg-card: #1e293b;
+            --bg-input: #1e293b;
+            --border-color: #334155;
+            --text-main: #f8fafc;
+            --accent-color: #38bdf8;
+        }
+
+        .light-theme {
+            --bg-main: #f8fafc;
+            --bg-sidebar: #f1f5f9;
+            --bg-card: #ffffff;
+            --bg-input: #ffffff;
+            --border-color: #e2e8f0;
+            --text-main: #0f172a;
+            --accent-color: #0284c7;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: system-ui, -apple-system, sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .sidebar {
+            background-color: var(--bg-sidebar);
+            border-color: var(--border-color);
+            transition: width 0.3s ease;
+        }
+
+        .sidebar.collapsed { width: 70px; }
+        .sidebar.collapsed .hide-on-collapse { display: none; }
+
+        .chat-container { max-width: 850px; margin: 0 auto; }
+
+        .input-box {
+            background-color: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 26px;
+        }
+
+        .input-box:focus-within { border-color: var(--accent-color); }
+        .header-bar { border-bottom: 1px solid var(--border-color); }
+
+        /* Loading Dots Animation */
+        .typing-indicator span {
+            animation: blink 1.4s infinite both;
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background-color: #38bdf8;
+            margin: 0 2px;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: .2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: .4s; }
+
+        @keyframes blink {
+            0% { opacity: .2; transform: scale(0.8); }
+            20% { opacity: 1; transform: scale(1.2); }
+            100% { opacity: .2; transform: scale(0.8); }
+        }
+
+        /* Clean Formatting Styles for AI Responses */
+        .prose-ai p { margin-bottom: 0.75rem; line-height: 1.6; }
+        .prose-ai ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 0.75rem; }
+        .prose-ai ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 0.75rem; }
+        .prose-ai li { margin-bottom: 0.25rem; }
+        .prose-ai strong { color: #38bdf8; font-weight: 600; }
+        .prose-ai table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.9rem; }
+        .prose-ai th, .prose-ai td { border: 1px solid var(--border-color); padding: 8px 12px; text-align: left; }
+        .prose-ai th { background-color: rgba(56, 189, 248, 0.1); color: #38bdf8; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden" onclick="closePlusMenu(event)">
+
+    <!-- Sidebar -->
+    <div id="sidebar" class="sidebar w-64 flex flex-col justify-between p-3 border-r">
+        <div>
+            <div class="flex items-center justify-between p-2">
+                <button onclick="toggleSidebar()" class="text-xl text-gray-400 hover:text-white p-1 rounded-lg">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="flex items-center gap-2 text-2xl font-bold text-sky-400 hide-on-collapse">
+                    <i class="fa-solid fa-scale-balanced"></i>
+                </div>
+            </div>
+
+            <button onclick="createNewChat()" class="w-full mt-4 flex items-center gap-3 p-2.5 rounded-lg border border-slate-700 hover:bg-slate-800 text-sm">
+                <i class="fa-solid fa-plus text-sky-400"></i>
+                <span class="hide-on-collapse">New chat</span>
+            </button>
+
+            <div class="mt-6 hide-on-collapse">
+                <div class="text-xs font-semibold text-gray-400 mb-2 px-2">Recent Chats</div>
+                <div id="historyList" class="space-y-1 max-h-[60vh] overflow-y-auto"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Section -->
+    <div class="flex-1 flex flex-col h-full relative">
+        
+        <!-- Header -->
+        <div class="header-bar h-14 flex items-center justify-between px-6 text-sm">
+            <span class="font-semibold text-sky-400 text-lg">Legal AI Advisor</span>
+            
+            <button onclick="toggleTheme()" class="flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-700 text-xs hover:bg-slate-800">
+                <i id="themeIcon" class="fa-solid fa-moon text-yellow-400"></i>
+                <span id="themeText">Dark Mode</span>
+            </button>
+        </div>
+
+        <!-- Chat Area -->
+        <div id="chatBox" class="flex-1 overflow-y-auto p-4 space-y-6 pb-36">
+            <div id="heroText" class="flex flex-col items-center justify-center h-full text-center">
+                <h1 class="text-3xl font-bold text-sky-400 mb-2">How can I assist you today?</h1>
+                <p class="text-sm text-gray-400">Ask any legal question or attach documents for review</p>
+            </div>
+        </div>
+
+        <!-- Fixed Bottom Input Bar -->
+        <div class="absolute bottom-0 left-0 right-0 p-4 bg-transparent">
+            <div class="chat-container">
+                <form id="chatForm" onsubmit="sendMessage(event)" class="input-box flex flex-col p-2 relative">
+                    
+                    <!-- File Badge -->
+                    <div id="attachmentPreview" class="hidden items-center gap-2 bg-slate-800 border border-slate-700 text-sky-400 px-3 py-1.5 rounded-lg text-xs w-fit mb-2 ml-2">
+                        <i class="fa-solid fa-paperclip"></i>
+                        <span id="attachedFileName">document.pdf</span>
+                        <button type="button" onclick="removeAttachment()" class="text-gray-400 hover:text-red-400 ml-2">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center w-full relative">
+                        <div class="relative">
+                            <button type="button" onclick="togglePlusMenu(event)" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-700 text-gray-400 hover:text-sky-400 transition">
+                                <i class="fa-solid fa-plus text-lg"></i>
+                            </button>
+
+                            <div id="plusMenu" class="hidden absolute bottom-12 left-0 w-48 bg-slate-800 border border-slate-700 rounded-xl shadow-xl py-2 z-50">
+                                <label for="fileInput" class="flex items-center gap-3 px-4 py-2 text-xs text-gray-200 hover:bg-slate-700 cursor-pointer">
+                                    <i class="fa-solid fa-file-arrow-up text-sky-400"></i> Upload Document (PDF/DOCX)
+                                </label>
+                                <label for="fileInput" class="flex items-center gap-3 px-4 py-2 text-xs text-gray-200 hover:bg-slate-700 cursor-pointer">
+                                    <i class="fa-solid fa-image text-emerald-400"></i> Upload Image / Text File
+                                </label>
+                            </div>
+                        </div>
+
+                        <input type="file" id="fileInput" class="hidden" onchange="handleFileSelect(event)">
+                        <input type="text" id="userInput" placeholder="Ask a question..." class="w-full bg-transparent border-none outline-none px-3 text-base placeholder-gray-400" />
+
+                        <button type="submit" class="w-8 h-8 flex items-center justify-center rounded-full bg-sky-500 text-white hover:bg-sky-600 transition">
+                            <i class="fa-solid fa-arrow-up text-sm font-bold"></i>
+                        </button>
+                    </div>
+                </form>
+                <div class="text-center text-xs text-gray-500 mt-2">Legal AI Advisor can make mistakes. Verify important legal info.</div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let currentSessionId = 'session_1';
+        let isDarkMode = true;
+        let selectedFile = null;
+
+        function togglePlusMenu(e) {
+            e.stopPropagation();
+            document.getElementById('plusMenu').classList.toggle('hidden');
+        }
+
+        function closePlusMenu(e) {
+            const menu = document.getElementById('plusMenu');
+            if (!menu.classList.contains('hidden')) menu.classList.add('hidden');
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            selectedFile = file;
+            document.getElementById('attachedFileName').innerText = file.name;
+            document.getElementById('attachmentPreview').classList.remove('hidden');
+            document.getElementById('attachmentPreview').classList.add('flex');
+            closePlusMenu(event);
+        }
+
+        function removeAttachment() {
+            selectedFile = null;
+            document.getElementById('fileInput').value = '';
+            document.getElementById('attachmentPreview').classList.add('hidden');
+            document.getElementById('attachmentPreview').classList.remove('flex');
+        }
+
+        async function createNewChat() {
+            const res = await fetch('/new_chat', { method: 'POST' });
+            const data = await res.json();
+            currentSessionId = data.session_id;
+            removeAttachment();
+            
+            document.getElementById('chatBox').innerHTML = `
+                <div id="heroText" class="flex flex-col items-center justify-center h-full text-center">
+                    <h1 class="text-3xl font-bold text-sky-400 mb-2">How can I assist you today?</h1>
+                    <p class="text-sm text-gray-400">Ask any legal question or attach documents for review</p>
+                </div>`;
+            loadHistory();
+        }
+
+        async function loadHistory() {
+            const res = await fetch('/sessions');
+            const data = await res.json();
+            const list = document.getElementById('historyList');
+            list.innerHTML = '';
+
+            data.sessions.forEach(s => {
+                const active = s.id === currentSessionId ? 'bg-slate-800 border-sky-500' : 'hover:bg-slate-800';
+                list.innerHTML += `
+                    <button onclick="switchSession('${s.id}')" class="w-full text-left p-2 rounded-lg text-sm truncate border border-transparent ${active}">
+                        💬 ${s.title}
+                    </button>`;
+            });
+        }
+
+        async function switchSession(id) {
+            currentSessionId = id;
+            removeAttachment();
+            const res = await fetch(`/get_chat?session_id=${id}`);
+            const data = await res.json();
+            
+            const chatBox = document.getElementById('chatBox');
+            chatBox.innerHTML = '';
+
+            if (data.messages.length === 0) {
+                chatBox.innerHTML = `
+                    <div id="heroText" class="flex flex-col items-center justify-center h-full text-center">
+                        <h1 class="text-3xl font-bold text-sky-400 mb-2">How can I assist you today?</h1>
+                        <p class="text-sm text-gray-400">Ask any legal question or attach documents for review</p>
+                    </div>`;
+            } else {
+                data.messages.forEach(msg => {
+                    renderMessage(msg.role, msg.content, msg.filename);
+                });
+            }
+            loadHistory();
+        }
+
+        function renderMessage(role, content, filename) {
+            const chatBox = document.getElementById('chatBox');
+            if (role === 'user') {
+                let fileBadge = filename ? `<div class="text-xs bg-slate-700 text-sky-300 px-2 py-1 rounded mb-1 flex items-center gap-1 w-fit"><i class="fa-solid fa-paperclip"></i> ${filename}</div>` : '';
+                chatBox.innerHTML += `
+                    <div class="chat-container flex justify-end">
+                        <div class="bg-sky-600 text-white px-4 py-2.5 rounded-2xl max-w-[80%]">
+                            ${fileBadge}
+                            <div>${content}</div>
+                        </div>
+                    </div>`;
+            } else {
+                // Formatting AI output through Markdown parser
+                const formattedContent = marked.parse(content);
+                chatBox.innerHTML += `
+                    <div class="chat-container flex gap-3">
+                        <div class="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-xs font-bold text-white shrink-0">AI</div>
+                        <div class="py-1 max-w-[85%] prose-ai leading-relaxed">${formattedContent}</div>
+                    </div>`;
+            }
+        }
+
+        function renderLoadingIndicator() {
+            const chatBox = document.getElementById('chatBox');
+            const loadingId = 'loading-' + Date.now();
+            chatBox.innerHTML += `
+                <div id="${loadingId}" class="chat-container flex gap-3">
+                    <div class="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-xs font-bold text-white shrink-0">AI</div>
+                    <div class="py-2.5 px-4 bg-slate-800 rounded-2xl flex items-center gap-1">
+                        <div class="typing-indicator">
+                            <span></span><span></span><span></span>
+                        </div>
+                    </div>
+                </div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+            return loadingId;
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('collapsed');
+        }
+
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            document.body.classList.toggle('light-theme');
+            document.getElementById('themeIcon').className = isDarkMode ? 'fa-solid fa-moon text-yellow-400' : 'fa-solid fa-sun text-orange-500';
+            document.getElementById('themeText').innerText = isDarkMode ? 'Dark Mode' : 'Light Mode';
+        }
+
+        async function sendMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById('userInput');
+            const message = input.value.trim();
+            
+            if (!message && !selectedFile) return;
+
+            const chatBox = document.getElementById('chatBox');
+            const heroText = document.getElementById('heroText');
+            if (heroText) heroText.remove();
+
+            const formData = new FormData();
+            formData.append('message', message || "Please review the attached document.");
+            formData.append('session_id', currentSessionId);
+            
+            let attachedName = null;
+            if (selectedFile) {
+                formData.append('file', selectedFile);
+                attachedName = selectedFile.name;
+            }
+
+            renderMessage('user', message || "Please review the attached document.", attachedName);
+            
+            input.value = '';
+            removeAttachment();
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            const loaderId = renderLoadingIndicator();
+
+            const res = await fetch('/chat', { method: 'POST', body: formData });
+            const data = await res.json();
+
+            const loaderElem = document.getElementById(loaderId);
+            if (loaderElem) loaderElem.remove();
+
+            renderMessage('assistant', data.reply, null);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            loadHistory();
+        }
+
+        loadHistory();
+    </script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+# Virtual environments
+.venv/
+.venv-1/
+
+# API keys and secrets
+.env
+.env.*
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Local databases
+chroma_db/
+chroma_db_ui/
+
+# Generated files
+output/
+
+# User/session data
+sessions.json
+
+# Private contract
+data/my_contract.pdf
+
+# VS Code
+.vscode/
+
+# Other
+.idea/
+.DS_Store
+Thumbs.db
